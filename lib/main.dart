@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:spooky_finder/theme/app_theme.dart';
 import 'screens/home_screen.dart';
 
-
 void main() {
   runApp(const MyApp());
 }
