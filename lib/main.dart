@@ -1,25 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:spooky_finder/theme/app_theme.dart';
-import 'screens/home_screen.dart';
+import 'package:spooky_finder/screens/home_screen.dart';
+import 'theme/app_theme.dart';
+import 'view_models/attractions_view_model.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  // Lets the app read its asset files before runApp()
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // TEST DRIVE (Lesson 2): load the haunts and print them to the Debug Console.
+  // Lesson 3 moves this into the home screen.
+  final viewModel = AttractionsViewModel();
+  await viewModel.loadAttractions();
+  debugPrint('👻 Loaded ${viewModel.attractions.length} haunts');
+  for (final attraction in viewModel.attractions) {
+    debugPrint('  • $attraction');
+  }
+  if (viewModel.errorMessage != null) {
+    debugPrint('❌ ${viewModel.errorMessage}');
+  }
+
+  runApp(const SpookyFindApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SpookyFindApp extends StatelessWidget {
+  const SpookyFindApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Spooky Find',
-      debugShowCheckedModeBanner: false,
-      
-      // Wire up custom themes
+      title: 'SpookyFind',
+      // debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, 
-      
+      themeMode: ThemeMode.system,
       home: const HomeScreen(),
     );
   }
