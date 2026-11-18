@@ -6,10 +6,16 @@ export "spooky_map.dart";
 
 
 class SpookyMap extends StatelessWidget {
-  const SpookyMap({super.key, this.attractions = const []});
+  const SpookyMap({
+    super.key,
+    this.attractions = const [],
+    this.userLocation,
+  });
 
   // The haunts to pin on the map. The home screen passes these in.
   final List<Attraction> attractions;
+  // Where the user is, or null if we don't know (yet, or at all)
+  final LatLng? userLocation;
 
   // Home base: where the map starts. Replace with your school's coordinates.
   static const LatLng homeBase = LatLng(39.610181, -105.021044);
@@ -25,6 +31,8 @@ class SpookyMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // Center on the user if we know where they are; otherwise fall back to home base
+    final LatLng center = userLocation ?? homeBase;
 
     return Container(
       height: 300,
@@ -38,8 +46,10 @@ class SpookyMap extends StatelessWidget {
         ),
       ),
       child: FlutterMap(
-        options: const MapOptions(
-          initialCenter: homeBase,
+        // A new center means a new key, so Flutter builds a fresh map that starts there
+        key: ValueKey(center),
+        options: MapOptions(
+          initialCenter: center,
           initialZoom: 13,
         ),
         children: [
@@ -48,31 +58,32 @@ class SpookyMap extends StatelessWidget {
             userAgentPackageName: 'com.example.spooky_finder',
           ),
                // One pin per haunt, drawn on top of the street tiles
-          MarkerLayer(
-            markers: [
-              for (final attraction in attractions)
+          // The "you are here" dot, drawn above the haunt pins. Only shown when we know where the user is.
+          if (userLocation != null)
+            MarkerLayer(
+              markers: [
                 Marker(
-                  point: attraction.location,
-                  width: 40,
-                  height: 40,
+                  point: userLocation!,
+                  width: 32,
+                  height: 32,
                   child: Tooltip(
-                    message: attraction.name, // Shown on hover or long-press, and read by screen readers
+                    message: 'You are here',
                     child: Container(
                       decoration: BoxDecoration(
-                        color: colorScheme.primary,
+                        color: colorScheme.tertiary, // A different color from the haunt pins
                         shape: BoxShape.circle,
-                        border: Border.all(width: 2, color: colorScheme.surface),
+                        border: Border.all(width: 3, color: colorScheme.surface),
                       ),
                       child: Icon(
-                        _iconFor(attraction.type),
-                        color: colorScheme.onPrimary,
-                        size: 22,
+                        Icons.person,
+                        color: colorScheme.onTertiary,
+                        size: 18,
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ],
+            ),
           const SimpleAttributionWidget(
             source: Text('OpenStreetMap contributors'),
           ),
