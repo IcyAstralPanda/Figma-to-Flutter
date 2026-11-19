@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../widgets/widgets.dart';
+import '../models/attraction.dart';
 import '../view_models/attractions_view_model.dart';
 import '../view_models/location_view_model.dart';
+import '../view_models/photos_view_model.dart';
+import '../widgets/widgets.dart';
+import 'camera_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Created once, when the screen first appears, and kept between rebuilds
   final AttractionsViewModel _viewModel = AttractionsViewModel();
   final LocationViewModel _locationViewModel = LocationViewModel();
+  final PhotosViewModel _photosViewModel = PhotosViewModel(); // Shared by the camera and the gallery
 
   @override
   void initState() {
@@ -29,13 +33,33 @@ class _HomeScreenState extends State<HomeScreen> {
     // No await: the screen draws right away, and the pins appear when the haunts arrive
     _viewModel.loadAttractions();
     _locationViewModel.findUser(); // Runs at the same time as loading the haunts
+    _photosViewModel.loadPhotos(); // The photos saved last time
   }
 
   @override
   void dispose() {
     _viewModel.dispose(); // The screen is gone, so stop listening for changes
     _locationViewModel.dispose();
+    _photosViewModel.dispose();
     super.dispose();
+  }
+
+  // Slides the details popup up from the bottom of the screen
+  void _showDetails(Attraction attraction) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true, // The little bar at the top: drag it down to close
+      builder: (context) => HauntDetailsSheet(attraction: attraction),
+    );
+  }
+
+  // Slides the camera screen in. The back arrow comes back here.
+  void _openCamera() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CameraScreen(photosViewModel: _photosViewModel),
+      ),
+    );
   }
 
   @override
@@ -47,11 +71,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: const AppHeader(
         title: 'Spooky Find',
       ),
-      // Rebuilds everything inside whenever the ViewModel calls notifyListeners()
+      // Rebuilds everything inside whenever EITHER ViewModel calls notifyListeners()
       body: ListenableBuilder(
         listenable: Listenable.merge([_viewModel, _locationViewModel]),
         builder: (context, child) {
           final visible = _viewModel.visibleAttractions;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
@@ -66,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _viewModel.setMaxScareLevel(_scareLevels.indexOf(label) + 1);
                   },
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
                 if (_viewModel.isLoading)
                   const LinearProgressIndicator()
                 else if (_viewModel.errorMessage != null)
@@ -75,6 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
                   )
                 else
+                  Text(
+                    'Showing ${visible.length} of ${_viewModel.attractions.length} haunts',
+                    style: textTheme.bodyMedium,
+                  ),
                 if (_locationViewModel.isLocating)
                   Text('Finding your location…', style: textTheme.bodySmall)
                 else if (_locationViewModel.problem != null)
@@ -82,22 +111,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Showing home base: ${_locationViewModel.problem}',
                     style: textTheme.bodySmall,
                   ),
-                  Text(
-                    'Showing ${visible.length} of ${_viewModel.attractions.length} haunts',
-                    style: textTheme.bodyMedium,
-                  ),
                 const SizedBox(height: 16),
                 SpookyMap(
                   attractions: visible,
                   userLocation: _locationViewModel.userLocation,
+                  onAttractionTapped: _showDetails,
                 ),
                 const SizedBox(height: 24),
-                // 3. Camera & Gallery Action Row (Lesson A Placeholders)
+                // 3. Camera & Gallery Action Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      onPressed: _openCamera,
+                      tooltip: 'Take a photo', // Also read by screen readers
                       icon: SvgPicture.asset(
                         'assets/icons/home/camera.svg',
                         colorFilter: ColorFilter.mode(
@@ -107,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {}, // Lesson 7: open the gallery
                       icon: SvgPicture.asset(
                         'assets/icons/home/gallery.svg',
                         colorFilter: ColorFilter.mode(
@@ -121,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           );
-        }
+        },
       ),
     );
   }

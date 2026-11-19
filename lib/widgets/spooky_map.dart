@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/attraction.dart';
-export "spooky_map.dart";
 
 
 class SpookyMap extends StatelessWidget {
@@ -10,12 +9,15 @@ class SpookyMap extends StatelessWidget {
     super.key,
     this.attractions = const [],
     this.userLocation,
+    this.onAttractionTapped,
   });
 
   // The haunts to pin on the map. The home screen passes these in.
   final List<Attraction> attractions;
   // Where the user is, or null if we don't know (yet, or at all)
   final LatLng? userLocation;
+   // Called with the haunt whose pin was tapped. The home screen decides what happens.
+  final ValueChanged<Attraction>? onAttractionTapped;
 
   // Home base: where the map starts. Replace with your school's coordinates.
   static const LatLng homeBase = LatLng(39.610181, -105.021044);
@@ -62,22 +64,29 @@ class SpookyMap extends StatelessWidget {
           if (userLocation != null)
             MarkerLayer(
               markers: [
+                for (final attraction in attractions)
                 Marker(
                   point: userLocation!,
                   width: 32,
                   height: 32,
-                  child: Tooltip(
-                    message: 'You are here',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.tertiary, // A different color from the haunt pins
-                        shape: BoxShape.circle,
-                        border: Border.all(width: 3, color: colorScheme.surface),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        color: colorScheme.onTertiary,
-                        size: 18,
+                  child: GestureDetector(
+                    onTap: () => onAttractionTapped?.call(attraction),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Tooltip(
+                        message: attraction.name,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.tertiary, // A different color from the haunt pins
+                            shape: BoxShape.circle,
+                            border: Border.all(width: 3, color: colorScheme.surface),
+                          ),
+                          child: Icon(
+                            Icons.person,
+                            color: colorScheme.onTertiary,
+                            size: 18,
+                          ),
+                        ),
                       ),
                     ),
                   ),
